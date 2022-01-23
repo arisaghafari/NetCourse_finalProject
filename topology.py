@@ -38,29 +38,31 @@ def dumbbell_test():
     net.start()
 
     print("Dumping host connections...")
-    dumpNodeConnections(net.hosts)
+    # dumpNodeConnections(net.hosts)
 
     print("Testing network connectivity...")
     h1, h2 = net.get('h1', 'h2')
     h3, h4 = net.get('h3', 'h4')
 
-    for i in range(1, 10):
-        net.pingFull(hosts=(h1, h2))
+    # for i in range(1, 10):
+    #     net.pingFull(hosts=(h1, h2))
 
-    for i in range(1, 10):
-        net.pingFull(hosts=(h2, h1))
+    # for i in range(1, 10):
+    #     net.pingFull(hosts=(h2, h1))
 
-    for i in range(1, 10):
-        net.pingFull(hosts=(h4, h3))
+    # for i in range(1, 10):
+    #     net.pingFull(hosts=(h4, h3))
 
-    for i in range(1, 10):
-        net.pingFull(hosts=(h3, h4))
+    # for i in range(1, 10):
+    #     net.pingFull(hosts=(h3, h4))
 
     print("Testing bandwidth between h1 and h2...")
-    net.iperf(hosts=(h1, h2), fmt='m', seconds=10, port=5001)
+    # net.iperf(hosts=(h1, h2), fmt='m', seconds=10, port=5001)
+    net.iperf([h1, h2])
 
     print("Testing bandwidth between h3 and h4...")
-    net.iperf(hosts=(h3, h4), fmt='m', seconds=10, port=5001)
+    # net.iperf(hosts=(h3, h4), fmt='m', seconds=10, port=5001)
+    net.iperf([h3, h4])
 
     print("Stopping test...")
     net.stop()
