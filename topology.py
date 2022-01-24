@@ -1,74 +1,160 @@
+from os import link
 from mininet.topo import Topo
 from mininet.net import Mininet
 from mininet.link import TCLink
 from mininet.util import dumpNodeConnections
+from mininet.node import Host
+import time
 
-class DumbbellTopo(Topo):
-    def __init__( self ):
-        "Create custom topo."
-        Topo.__init__( self )
+class CustomTopo(Topo):
+    def __init__(self):
+        Topo.__init__(self)
          # Add hosts
-        h1 = self.addHost( 'h1' )
-        h2 = self.addHost( 'h2' )
-        h3 = self.addHost( 'h3' )
-        h4 = self.addHost( 'h4' )
+        h1 = self.addHost( 'Host1' )
+        h2 = self.addHost( 'Host2' )
+        h3 = self.addHost( 'Host3' )
+        h4 = self.addHost( 'Host4' )
 
         # Add switchs
-        s1 = self.addSwitch('s1')
-        s2 = self.addSwitch('s2')
-        s3 = self.addSwitch('s3')
-        s4 = self.addSwitch('s4')
+        s_left_up = self.addSwitch('s1')
+        s_right_up = self.addSwitch('s2')
+        s_left_down = self.addSwitch('s3')
+        s_right_down = self.addSwitch('s4')
 
         # Add links
-        self.addLink( h1, s1 ,cls=TCLink, bw = 100 , delay='0.1ms')
-        self.addLink( h1, s3 ,cls=TCLink, bw = 100 , delay='0.1ms')
-        self.addLink( h3, s3 ,cls=TCLink, bw = 100 , delay='0.1ms')
-        self.addLink( s1, s2 ,cls=TCLink, bw = 10 ) #A
-        self.addLink( s3, s4 ,cls=TCLink, bw = 20 ) #B
-        self.addLink( s2, h2 ,cls=TCLink, bw = 100 , delay='0.1ms')
-        self.addLink( s4, h2 ,cls=TCLink, bw = 100 , delay='0.1ms')
-        self.addLink( s4, h4 ,cls=TCLink, bw = 100 , delay='0.1ms')
-
-
-def dumbbell_test():
-    """ Create and test a dumbbell network.
-    """
-    topo = DumbbellTopo()
-    net = Mininet(topo)
+        self.addLink( h1, s_left_up , bw = 100 , delay='0.1ms')
+        self.addLink( h1, s_left_down , bw = 100 , delay='0.1ms')
+        self.addLink( h3, s_left_down , bw = 100 , delay='0.1ms')
+        self.addLink( s_left_up, s_right_up , bw = 10 ) #A
+        self.addLink( s_left_down, s_right_down , bw = 20 ) #B
+        self.addLink( s_right_up, h2 , bw = 100 , delay='0.1ms')
+        self.addLink( s_right_down, h2 , bw = 100 , delay='0.1ms')
+        self.addLink( s_right_down, h4 , bw = 100 , delay='0.1ms')
+    
+def prefTest():
+    topo = CustomTopo()
+    net = Mininet(topo = topo, host = Host, link = TCLink)
+    print("net start ...")
     net.start()
+    
+    h1, h2 = net.get('Host1', 'Host2')
+    h3, h4 = net.get('Host3', 'Host4')
 
-    print("Dumping host connections...")
-    # dumpNodeConnections(net.hosts)
+    print "h2 iperf running"
+    # h2 iperf -s &> h2.log &
+    h2.cmd("fsystemctl stop firewalld.service  &> h2.log &")
+    h2.cmd("iperf -s &> h2_iperf_server.log &")
+    print "h4 iperf running"
+    h4.cmd("iperf -s &> h4_iperf_server.log &")
 
-    print("Testing network connectivity...")
-    h1, h2 = net.get('h1', 'h2')
-    h3, h4 = net.get('h3', 'h4')
+    # print "h1 iperf running"
+    # net.iperf( ( h1, h2 ), l4Type='UDP' )
 
-    # for i in range(1, 10):
-    #     net.pingFull(hosts=(h1, h2))
+    # h1 iperf -t 120 -c 10.0.0.2 &> h1.log &
+    # print "h2 ip : " + h2.IP()
+    # h1.cmd("systemctl stop firewalld.service  &> h1.log &")
+    h1.cmd("iperf -c" + h2.IP() + " -t 50 &> h1_iperf.log")
+    # print "h1 ping running"
+    # h1.cmd("ping " + h2.IP() + " > h1_ping.txt &")
 
-    # for i in range(1, 10):
-    #     net.pingFull(hosts=(h2, h1))
+    print "sleep 1"
+    time.sleep(10)
 
-    # for i in range(1, 10):
-    #     net.pingFull(hosts=(h4, h3))
+    print "h3 iperf running"
+    h3.cmd("iperf -c" + h4.IP() + " -t 20 &> h3_iperf.log")
+    # print "h3 ping running"
+    # h3.cmd("ping " + h4.IP() + " > h3_ping.txt &")
 
-    # for i in range(1, 10):
-    #     net.pingFull(hosts=(h3, h4))
+    print "sleep 2"
+    time.sleep(50)
 
-    print("Testing bandwidth between h1 and h2...")
-    # net.iperf(hosts=(h1, h2), fmt='m', seconds=10, port=5001)
-    net.iperf([h1, h2])
-
-    print("Testing bandwidth between h3 and h4...")
-    # net.iperf(hosts=(h3, h4), fmt='m', seconds=10, port=5001)
-    net.iperf([h3, h4])
-
-    print("Stopping test...")
+    print "net stop"
     net.stop()
 
 if __name__=='__main__':
-    dumbbell_test()
+    prefTest()
+
+
+
+
+
+
+
+
+# from mininet.topo import Topo
+# from mininet.net import Mininet
+# from mininet.link import TCLink
+# from mininet.util import dumpNodeConnections
+
+# class DumbbellTopo(Topo):
+#     def __init__( self ):
+#         "Create custom topo."
+#         Topo.__init__( self )
+#          # Add hosts
+#         h1 = self.addHost( 'h1' )
+#         h2 = self.addHost( 'h2' )
+#         h3 = self.addHost( 'h3' )
+#         h4 = self.addHost( 'h4' )
+
+#         # Add switchs
+#         s1 = self.addSwitch('s1')
+#         s2 = self.addSwitch('s2')
+#         s3 = self.addSwitch('s3')
+#         s4 = self.addSwitch('s4')
+
+#         # Add links
+#         self.addLink( h1, s1 ,cls=TCLink, bw = 100 , delay='0.1ms')
+#         self.addLink( h1, s3 ,cls=TCLink, bw = 100 , delay='0.1ms')
+#         self.addLink( h3, s3 ,cls=TCLink, bw = 100 , delay='0.1ms')
+#         self.addLink( s1, s2 ,cls=TCLink, bw = 10 ) #A
+#         self.addLink( s3, s4 ,cls=TCLink, bw = 20 ) #B
+#         self.addLink( s2, h2 ,cls=TCLink, bw = 100 , delay='0.1ms')
+#         self.addLink( s4, h2 ,cls=TCLink, bw = 100 , delay='0.1ms')
+#         self.addLink( s4, h4 ,cls=TCLink, bw = 100 , delay='0.1ms')
+
+
+# def dumbbell_test():
+#     """ Create and test a dumbbell network.
+#     """
+#     topo = DumbbellTopo()
+#     net = Mininet(topo)
+#     net.start()
+
+#     print("Dumping host connections...")
+#     # dumpNodeConnections(net.hosts)
+
+#     print("Testing network connectivity...")
+#     h1, h2 = net.get('h1', 'h2')
+#     h3, h4 = net.get('h3', 'h4')
+
+#     # for i in range(1, 10):
+#     #     net.pingFull(hosts=(h1, h2))
+
+#     # for i in range(1, 10):
+#     #     net.pingFull(hosts=(h2, h1))
+
+#     # for i in range(1, 10):
+#     #     net.pingFull(hosts=(h4, h3))
+
+#     # for i in range(1, 10):
+#     #     net.pingFull(hosts=(h3, h4))
+
+#     print("Testing bandwidth between h1 and h2...")
+#     # net.iperf(hosts=(h1, h2), fmt='m', seconds=10, port=5001)
+#     # net.iperf([h1, h2])
+#     h1.cmd("iperf -c "+h2.IP()+" -t 50 > h1_iperf.txt")
+#     h2.cmd("iperf -s  > h2_iperf_server.txt")
+    
+
+#     print("Testing bandwidth between h3 and h4...")
+#     # net.iperf(hosts=(h3, h4), fmt='m', seconds=10, port=5001)
+#     net.iperf([h3, h4])
+
+#     print("Stopping test...")
+#     net.stop()
+
+# if __name__=='__main__':
+#     dumbbell_test()
 
 # from distutils.command.build import build
 # from mininet.net import Mininet
