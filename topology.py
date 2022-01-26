@@ -35,7 +35,7 @@ class CustomTopo(Topo):
         self.addLink( s_right_up, h2 , bw = 100 , delay='0.1ms')
         self.addLink( s_right_down, h2 , bw = 100 , delay='0.1ms')
         self.addLink( s_right_down, h4 , bw = 100 , delay='0.1ms')
-    
+
 def prefTest(net):
     #topo = CustomTopo()
     #net = Mininet(topo = topo, host = Host, link = TCLink)
@@ -46,9 +46,11 @@ def prefTest(net):
 
     h2.cmd("iperf -s &> h2_iperf_server.log &")
     h4.cmd("iperf -s &> h4_iperf_server.log &")
-    h1.cmd("iperf -c" + h2.IP() + " -t 50 &> h1_iperf.log &")
-    h1.cmd("ping " + h2.IP() + " > h1_ping.log &")
 
+    h1.cmd("iperf -c 10.0.1.1 -t 50 &> h1_iperf.log &")
+   # h1.cmd("iperf -c" + h2.IP() + " -t 50 &> h1_iperf.log &")
+#    h1.cmd("ping " + h2.IP() + " > h1_ping.log &")
+    h1.cmd("ping 10.0.1.1 > h1_ping.log &")
     print "sleep 1"
     time.sleep(10)
 
@@ -59,6 +61,7 @@ def prefTest(net):
     time.sleep(50)
 
     #net.stop()
+
 def main():
     # Making sure MPTCP is enabled on system and congestion control algorithm modules are loaded
     os.system('modprobe mptcp_balia; modprobe mptcp_wvegas; modprobe mptcp_olia; modprobe mptcp_coupled')
